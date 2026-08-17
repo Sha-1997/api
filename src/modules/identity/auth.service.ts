@@ -1633,7 +1633,7 @@ export class AuthService {
     if (!user) {
       return {
         success: true,
-        message: 'If the email exists, a password reset link will be sent.',
+        message: 'No account found with this email address. Please create an account first.',
       };
     }
 
@@ -1663,12 +1663,6 @@ export class AuthService {
     const resetUrl =
       `${process.env.WEB_URL || 'http://localhost:3000'}` + `/reset-password?token=${token}`;
 
-    console.log('======================================');
-    console.log('PASSWORD RESET EMAIL');
-    console.log('EMAIL:', user.email);
-    console.log('RESET URL:', resetUrl);
-    console.log('EXPIRES:', expiresAt);
-    console.log('======================================');
 
     // Send email
     await this.mailService.sendPasswordResetEmail(user.email, resetUrl);
