@@ -17,7 +17,7 @@ import { Request } from 'express';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  @Post('checkout')
+@Post('checkout')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   async createCheckoutSession(
@@ -28,6 +28,8 @@ export class PaymentsController {
     const userId = req.user.sub;
     const ip = expressReq.ip || expressReq.socket.remoteAddress;
     const userAgent = expressReq.headers['user-agent'];
+    
+   
     return this.paymentsService.createCheckoutSession(userId, dto, ip, userAgent);
   }
 

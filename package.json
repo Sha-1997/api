@@ -39,6 +39,7 @@
     "pg": "^8.11.5",
     "reflect-metadata": "^0.2.2",
     "rxjs": "7.8.2",
+    "stripe": "^22.5.0",
     "tree-kill": "^1.2.2"
   },
   "devDependencies": {

@@ -9,19 +9,25 @@ import { AuditService } from '../shared/audit.service';
 import { CheckoutDto } from './dto/checkout.dto';
 import { InvoicesService } from '../invoices/invoices.service';
 import * as crypto from 'crypto';
+import * as Stripe from 'stripe'; 
 
 @Injectable()
 export class PaymentsService {
+  private stripe: Stripe;
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
     private readonly invoices: InvoicesService,
-  ) {}
+  ) {
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
+      apiVersion: '2026-07-29.dahlia',
+    });
+  }
 
   /**
    * Initialize a checkout payment session mapping the order ID
    */
-  async createCheckoutSession(
+ async createCheckoutSession(
     userId: string,
     dto: CheckoutDto,
     ipAddress?: string,
@@ -49,7 +55,37 @@ export class PaymentsService {
       throw new BadRequestException('Checkout seat reservation window has expired. Please create a new order.');
     }
 
-    const transactionId = `tx_${crypto.randomBytes(8).toString('hex')}`;
+   
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true }, 
+    });
+
+    const session = await this.stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      customer_email: user?.email, 
+      line_items: [
+        {
+          price_data: {
+            currency: order.currency.toLowerCase(),
+            product_data: {
+              name: order.items[0]?.name || 'Founder Membership',
+            },
+            unit_amount: Math.round(Number(order.totalAmount) * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${process.env.WEB_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.WEB_URL}/checkout/cancel`,
+      metadata: {
+        orderId: order.id,
+        userId: userId,
+      },
+    });
+
+    const transactionId = session.id;
 
     // Create PaymentTransaction log in database
     const transaction = await this.prisma.paymentTransaction.create({
@@ -74,7 +110,7 @@ export class PaymentsService {
     return {
       success: true,
       transactionId: transaction.transactionId,
-      checkoutUrl: `https://checkout.stripe.com/pay/${transaction.transactionId}`,
+      checkoutUrl: session.url,
       amount: transaction.amount,
       currency: transaction.currency,
     };

@@ -1,7 +1,16 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CheckoutDto {
-  @IsString({ message: 'Order ID must be a text string.' })
-  @IsNotEmpty({ message: 'Order ID is required.' })
+  @IsString()
+  @IsNotEmpty()
   orderId: string;
+
+  @IsString()
+  @IsOptional()
+  cancelUrl?: string;
+
+ 
+  @IsString()
+  @IsOptional()
+  successUrl?: string;
 }
